@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore Bus Dashboard - Cycling</title>
+    <style>
+        /* 
+           HARDWARE SPECS: 1.47" Inch 
+           Resolution: 368px (width) x 194px (height)
+        */
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* THE DISPLAY CONTAINER */
+        .display-bezel {
+            width: 368px;
+            height: 194px;
+            background-color: #000;
+            border-radius: 6px;
+            border: 2px solid #111;
+            overflow: hidden; /* CRITICAL: Hides the off-screen pages during transition */
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* --- ANIMATION CORE --- */
+        /* This wrapper holds all pages side-by-side */
+        .slider-wrapper {
+            display: flex;
+            width: 736px; /* Width of 2 pages (368px * 2) */
+            height: 100%;
+            transition: transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1); /* Smooth ease-in-out */
+        }
+
+        /* Class triggered by JS to slide left */
+        .slide-left {
+            transform: translateX(-368px);
+        }
+
+
+        /* --- PAGE 1: BUS STOPS (Styles from previous step) --- */
+        .page-bus {
+            width: 368px;
+            height: 100%;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: #000;
+        }
+
+        .header {
+            height: 28px;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+            background-color: #000;
+        }
+        .header-title { color: #fff; font-size: 12px; font-weight: 600; }
+        .header-time { color: #888; font-size: 10px; }
+
+        .list-container { flex-grow: 1; display: flex; flex-direction: column; }
+        
+        .bus-row {
+            height: 54px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            border-bottom: 1px solid #1a1a1a;
+            justify-content: space-between;
+        }
+        .bus-row:nth-child(even) { background-color: #000; }
+
+        .bus-info { display: flex; flex-direction: column; justify-content: center; width: 55%; }
+        .service-no { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.1; }
+        .stop-name { font-size: 9px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .times-matrix { display: flex; gap: 8px; align-items: flex-end; }
+        .time-block { display: flex; flex-direction: column; align-items: center; }
+        
+        .time-primary { font-size: 22px; font-weight: 700; color: #00ff00; line-height: 1; }
+        .time-secondary { font-size: 14px; font-weight: 600; color: #ccc; line-height: 1; margin-top: 2px; }
+        .time-label { font-size: 7px; color: #555; margin-top: 2px; }
+
+        .load-indicator { display: flex; gap: 2px; margin-top: 4px; }
+        .dot { width: 4px; height: 4px; border-radius: 50%; background: #333; }
+        .dot.green { background: #4caf50; }
+
+
+        /* --- PAGE 2: WEATHER & FINANCE --- */
+        .page-info {
+            width: 368px;
+            height: 100%;
+            flex-shrink: 0;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Weather Section (Top Half) */
+        .weather-section {
+            height: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            border-bottom: 1px solid #222;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .weather-icon {
+            font-size: 32px; /* Emoji acts as icon */
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+        }
+
+        .temp-large {
+            font-size: 36px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .temp-unit { font-size: 16px; color: #888; vertical-align: top; }
+
+        .weather-meta {
+            text-align: right;
+        }
+        .weather-desc { color: #fff; font-size: 12px; }
+        .weather-loc { color: #555; font-size: 10px; margin-top: 2px; }
+
+        /* Finance Section (Bottom Half) */
+        .finance-section {
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 15px;
+        }
+
+        .finance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .finance-row:last-child { margin-bottom: 0; }
+
+        .asset-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .asset-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .gold-icon { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; }
+        .btc-icon { background: linear-gradient(135deg, #F7931A, #FF6B00); color: #fff; }
+
+        .asset-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            font-family: 'Courier New', monospace; /* Monospace for numbers */
+        }
+
+        .asset-change {
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            margin-left: 5px;
+        }
+        .up { color: #00ff00; background: rgba(0, 255, 0, 0.1); }
+        .down { color: #ff4444; background: rgba(255, 0, 0, 0.1); }
+
+    </style>
+</head>
+<body>
+
+    <div class="display-bezel">
+        
+        <!-- The Slider Wrapper -->
+        <div class="slider-wrapper" id="slider">
+            
+            <!-- PAGE 1: BUS STOPS -->
+            <div class="page-bus">
+                <div class="header">
+                    <span class="header-title">My Favorites</span>
+                    <span class="header-time">Updated 10:45 AM</span>
+                </div>
+                <div class="list-container">
+                    <!-- Row 1 -->
+                    <div class="bus-row">
+                        <div class="bus-info">
+                            <div class="service-no">170</div>
+                            <div class="stop-name">Bt Batok West Ave 3</div>
+                        </div>
+                        <div class="times-matrix">
+                            <div class="time-block">
+                                <div class="time-primary">03</div>
+                                <div class="load-indicator"><span class="dot green"></span><span class="dot green"></span></div>
+                            </div>
+                            <div class="time-block">
+                                <div class="time-secondary">12</div>
+                                <div class="time-label">Next</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row 2 -->
+                    <div class="bus-row">
+                        <div class="bus-info">
+                            <div class="service-no">174</div>
+                            <div class="stop-name">Bt Batok Ctrl</div>
+                        </div>
+                        <div class="times-matrix">
+                            <div class="time-block">
+                                <div class="time-primary" style="color: #fff;">08</div>
+                                <div class="load-indicator"><span class="dot green"></span></div>
+                            </div>
+                            <div class="time-block">
+                                <div class="time-secondary">18</div>
+                                <div class="time-label">Next</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row 3 -->
+                    <div class="bus-row">
+                        <div class="bus-info">
+                            <div class="service-no">970</div>
+                            <div class="stop-name">Opp Bukit View Pr</div>
+                        </div>
+                        <div class="times-matrix">
+                            <div class="time-block">
+                                <div class="time-primary" style="color: #ff6b6b;">Arr</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 2: WEATHER & FINANCE -->
+            <div class="page-info">
+                
+                <!-- Weather Top -->
+                <div class="weather-section">
+                    <div class="weather-main">
+                        <div class="weather-icon">🌤️</div>
+                        <div class="temp-large">32<span class="temp-unit">°C</span></div>
+                    </div>
+                    <div class="weather-meta">
+                        <div class="weather-desc">Partly Cloudy</div>
+                        <div class="weather-loc">Singapore, SG</div>
+                    </div>
+                </div>
+
+                <!-- Finance Bottom -->
+                <div class="finance-section">
+                    
+                    <!-- Gold -->
+                    <div class="finance-row">
+                        <div class="asset-name">
+                            <div class="asset-icon gold-icon">Au</div>
+                            <span>Gold</span>
+                        </div>
+                        <div>
+                            <span class="asset-price">2,340.50</span>
+                            <span class="asset-change up">+0.4%</span>
+                        </div>
+                    </div>
+
+                    <!-- Bitcoin -->
+                    <div class="finance-row">
+                        <div class="asset-name">
+                            <div class="asset-icon btc-icon">₿</div>
+                            <span>BTC</span>
+                        </div>
+                        <div>
+                            <span class="asset-price">67,420</span>
+                            <span class="asset-change down">-1.2%</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Logic for Sliding -->
+    <script>
+        const slider = document.getElementById('slider');
+        let isBusPage = true;
+
+        // 300000ms = 5 minutes
+        // 5000ms = 5 seconds (for demo purposes)
+        const INTERVAL_TIME = 5000; 
+
+        setInterval(() => {
+            if (isBusPage) {
+                // Slide to Page 2 (Finance)
+                slider.classList.add('slide-left');
+            } else {
+                // Slide back to Page 1 (Bus)
+                slider.classList.remove('slide-left');
+            }
+            isBusPage = !isBusPage;
+        }, INTERVAL_TIME);
+    </script>
+</body>
+</html>

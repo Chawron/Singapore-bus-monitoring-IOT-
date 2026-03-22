@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BusMonitor Setup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #000;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+    color: #4FC3F7;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: #546E7A;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: #000;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 16px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 12px;
+  }
+
+  .card h2 {
+    font-size: 0.85rem;
+    color: #d0d0d0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card h2 .icon { font-size: 1rem; }
+
+  label {
+    display: block;
+    font-size: 0.75rem;
+    color: #9a9a9a;
+    margin-bottom: 3px;
+    margin-top: 10px;
+  }
+
+  label:first-of-type { margin-top: 0; }
+
+  input, select {
+    width: 100%;
+    background: #000;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus { border-color: #6e6e6e; }
+  input::placeholder { color: #4a4a4a; }
+
+  .hint {
+    font-size: 0.65rem;
+    color: #6a6a6a;
+    margin-top: 3px;
+  }
+
+  .stop-entry {
+    background: #000;
+    border: 1px solid #1f1f1f;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 8px;
+    position: relative;
+  }
+
+  .stop-entry .remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #f44336;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .stop-entry label { margin-top: 6px; }
+  .stop-entry label:first-child { margin-top: 0; }
+
+  .add-stop-btn {
+    background: #111;
+    border: 1px dashed #3a3a3a;
+    color: #ddd;
+    padding: 8px;
+    border-radius: 6px;
+    width: 100%;
+    margin-top: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+  }
+
+  .add-stop-btn:hover { background: #1a1a1a; }
+
+  .save-btn {
+    background: #2a2a2a;
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+
+  .save-btn:hover { background: #383838; }
+  .save-btn:active { background: #1f1f1f; }
+
+  .status-msg {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  .status-msg.ok { color: #4CAF50; }
+  .status-msg.err { color: #f44336; }
+  .status-msg.info { color: #FF9800; }
+
+  .wifi-scan {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .wifi-scan select { flex: 1; }
+
+  .scan-btn {
+    background: #111;
+    border: 1px solid #333;
+    color: #ddd;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .scan-btn:hover { background: #1a1a1a; }
+
+  .divider {
+    height: 1px;
+    background: #202020;
+    margin: 12px 0;
+  }
+
+  .footer {
+    margin-top: 16px;
+    font-size: 0.65rem;
+    color: #5a5a5a;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>BusMonitor Setup</h1>
+<div class="subtitle">Configure your device to get started</div>
+
+<!-- WiFi -->
+<div class="card">
+  <h2><span class="icon">&#128246;</span> WiFi Connection</h2>
+  <label for="wifiSsid">WiFi Network</label>
+  <div class="wifi-scan">
+    <select id="wifiSsid">
+      <option value="">-- Select network --</option>
+    </select>
+    <button class="scan-btn" onclick="scanWifi()">Scan</button>
+  </div>
+  <div class="hint">Or type manually below</div>
+  <label for="wifiSsidManual">SSID (manual)</label>
+  <input type="text" id="wifiSsidManual" placeholder="Your WiFi name">
+  <label for="wifiPass">Password</label>
+  <input type="password" id="wifiPass" placeholder="WiFi password">
+</div>
+
+<!-- LTA API -->
+<div class="card">
+  <h2><span class="icon">&#128272;</span> LTA DataMall API</h2>
+  <label for="apiKey">Account Key</label>
+  <input type="text" id="apiKey" placeholder="e.g. abc123def456...">
+  <div class="hint">Get free key at datamall.lta.gov.sg</div>
+</div>
+
+<!-- Bus Stops -->
+<div class="card">
+  <h2><span class="icon">&#128652;</span> Bus Stops to Monitor</h2>
+  <div id="stopsContainer">
+    <div class="stop-entry" data-index="0">
+      <button class="remove-btn" onclick="removeStop(this)">&times;</button>
+      <label>Bus Stop Code</label>
+      <input type="text" class="stop-code" placeholder="e.g. 21389" maxlength="5" inputmode="numeric">
+      <label>Filter Bus Services (comma separated, leave empty for all)</label>
+      <input type="text" class="stop-services" placeholder="e.g. 157, 174">
+    </div>
+    <div class="stop-entry" data-index="1">
+      <button class="remove-btn" onclick="removeStop(this)">&times;</button>
+      <label>Bus Stop Code</label>
+      <input type="text" class="stop-code" placeholder="e.g. 21249" maxlength="5" inputmode="numeric">
+      <label>Filter Bus Services (comma separated, leave empty for all)</label>
+      <input type="text" class="stop-services" placeholder="e.g. 174, 198">
+    </div>
+  </div>
+  <button class="add-stop-btn" onclick="addStop()">+ Add another stop</button>
+</div>
+
+<!-- Save -->
+<button class="save-btn" onclick="saveConfig()">Save & Restart Device</button>
+<div class="status-msg" id="statusMsg"></div>
+
+<div class="footer">
+  BusMonitor v1.0 &mdash; ESP32-C6<br>
+  After saving, device will restart and connect to your WiFi.
+</div>
+
+<script>
+let stopIndex = 2;
+
+function stopTemplate(code = '', services = '') {
+  return `
+    <button class="remove-btn" onclick="removeStop(this)">&times;</button>
+    <label>Bus Stop Code</label>
+    <input type="text" class="stop-code" placeholder="e.g. 83139" maxlength="5" inputmode="numeric" value="${code}">
+    <label>Filter Bus Services (comma separated, leave empty for all)</label>
+    <input type="text" class="stop-services" placeholder="e.g. 63, 136" value="${services}">
+  `;
+}
+
+function addStop() {
+  const container = document.getElementById('stopsContainer');
+  const div = document.createElement('div');
+  div.className = 'stop-entry';
+  div.dataset.index = stopIndex++;
+  div.innerHTML = stopTemplate();
+  container.appendChild(div);
+}
+
+function removeStop(btn) {
+  const entries = document.querySelectorAll('.stop-entry');
+  if (entries.length <= 1) return;
+  btn.closest('.stop-entry').remove();
+}
+
+async function scanWifi() {
+  const sel = document.getElementById('wifiSsid');
+  sel.innerHTML = '<option value="">Scanning...</option>';
+  try {
+    const resp = await fetch('/api/scan');
+    if (!resp.ok) throw new Error('scan failed');
+    const networks = await resp.json();
+    sel.innerHTML = '<option value="">-- Select network --</option>';
+    networks.forEach(n => {
+      if (!n.ssid) return;
+      const opt = document.createElement('option');
+      opt.value = n.ssid;
+      opt.textContent = `${n.ssid} (${n.rssi}dBm)`;
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    sel.innerHTML = '<option value="">Scan failed - type manually</option>';
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+}
+
+async function saveConfig() {
+  const ssid = (document.getElementById('wifiSsid').value || document.getElementById('wifiSsidManual').value).trim();
+  const pass = document.getElementById('wifiPass').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+
+  if (!ssid) { showStatus('Please enter WiFi SSID', 'err'); return; }
+  if (!pass) { showStatus('Please enter WiFi password', 'err'); return; }
+  if (!apiKey) { showStatus('Please enter LTA API key', 'err'); return; }
+
+  const entries = document.querySelectorAll('.stop-entry');
+  const stops = [];
+  entries.forEach(entry => {
+    const code = entry.querySelector('.stop-code').value.trim();
+    if (!code) return;
+    const svcs = entry.querySelector('.stop-services').value.trim();
+    const filterServices = svcs ? svcs.split(',').map(s => s.trim()).filter(Boolean) : [];
+    stops.push({ code, filterServices });
+  });
+
+  if (stops.length === 0) { showStatus('Add at least one bus stop', 'err'); return; }
+
+  // Firmware persists multiple stops and cycles them on the device.
+  const payload = {
+    wifi_ssid: ssid,
+    wifi_pass: pass,
+    api_key: apiKey,
+    bus_stop: stops[0].code,
+    bus_lines: stops[0].filterServices.join(','),
+    weather_area: 'City',
+    stops: stops
+  };
+
+  showStatus('Saving configuration...', 'info');
+  try {
+    const resp = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error(`Save failed: ${resp.status}`);
+    showStatus('Saved! Restarting device...', 'ok');
+  } catch (e) {
+    if (location.hostname === '' || location.protocol === 'file:') {
+      localStorage.setItem('busmon_config', JSON.stringify(payload));
+      showStatus('Saved to browser (test mode).', 'ok');
+    } else {
+      showStatus('Error: ' + e.message, 'err');
+    }
+  }
+}
+
+(async function loadExisting() {
+  try {
+    const resp = await fetch('/api/config');
+    if (!resp.ok) return;
+    const cfg = await resp.json();
+    if (cfg.wifi_ssid) document.getElementById('wifiSsidManual').value = cfg.wifi_ssid;
+    if (cfg.api_key) document.getElementById('apiKey').value = cfg.api_key;
+
+    const container = document.getElementById('stopsContainer');
+    container.innerHTML = '';
+
+    if (cfg.stops && cfg.stops.length) {
+      cfg.stops.forEach((s, i) => {
+        const div = document.createElement('div');
+        div.className = 'stop-entry';
+        div.dataset.index = i;
+        div.innerHTML = stopTemplate(s.code || '', (s.filterServices || []).join(', '));
+        container.appendChild(div);
+      });
+      stopIndex = cfg.stops.length;
+    } else {
+      const div = document.createElement('div');
+      div.className = 'stop-entry';
+      div.dataset.index = 0;
+      div.innerHTML = stopTemplate(cfg.bus_stop || '', cfg.bus_lines || '');
+      container.appendChild(div);
+      stopIndex = 1;
+    }
+  } catch (e) {
+    const saved = localStorage.getItem('busmon_config');
+    if (saved) {
+      try {
+        const cfg = JSON.parse(saved);
+        if (cfg.wifi_ssid) document.getElementById('wifiSsidManual').value = cfg.wifi_ssid;
+        if (cfg.api_key) document.getElementById('apiKey').value = cfg.api_key;
+      } catch (e2) {}
+    }
+  }
+})();
+
+scanWifi();
+</script>
+</body>
+</html>
